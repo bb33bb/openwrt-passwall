@@ -143,12 +143,16 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 	end
 	local function get_write(shunt_node_id, option)
 		return function(self, section, value)
-			m:set(shunt_node_id, option, value)
+			if s.fields["tcp_node"]:formvalue(section) == shunt_node_id then
+				m:set(shunt_node_id, option, value)
+			end
 		end
 	end
 	local function get_remove(shunt_node_id, option)
 		return function(self, section)
-			m:del(shunt_node_id, option)
+			if s.fields["tcp_node"]:formvalue(section) == shunt_node_id then
+				m:del(shunt_node_id, option)
+			end
 		end
 	end
 	if #normal_list > 0 then
@@ -514,15 +518,19 @@ o.validate = doh_validate
 o:depends({xray_dns_mode = "tcp+doh"})
 o:depends({singbox_dns_mode = "doh"})
 
-o = s:taboption("DNS", Value, "dns_client_ip", translate("EDNS Client Subnet"))
+o = s:taboption("DNS", Value, "remote_dns_client_ip", translate("EDNS Client Subnet"))
 o.description = translate("Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address).") .. "<br />" ..
 				translate("This feature requires the DNS server to support the Edns Client Subnet (RFC7871).")
 o.datatype = "ipaddr"
+o:depends({dns_mode = "sing-box"})
 o:depends({dns_mode = "xray"})
 
 o = s:taboption("DNS", Flag, "remote_fakedns", "FakeDNS", translate("Use FakeDNS work in the shunt domain that proxy."))
 o.default = "0"
 o:depends({dns_mode = "sing-box", dns_shunt = "dnsmasq"})
+o:depends({dns_mode = "sing-box", dns_shunt = "chinadns-ng"})
+o:depends({dns_mode = "xray", dns_shunt = "dnsmasq"})
+o:depends({dns_mode = "xray", dns_shunt = "chinadns-ng"})
 o.validate = function(self, value, t)
 	if value and value == "1" then
 		local _dns_mode = s.fields["dns_mode"]:formvalue(t)
